@@ -114,8 +114,8 @@ TW_RECOVERY_ADDITIONAL_RELINK_FILES := ${OUT}/system/lib64/android.hardware.boot
 #TW_EXCLUDE_MTP := true
 
 # Debug flags
-#TWRP_INCLUDE_LOGCAT := true
-#TARGET_USES_LOGD := true
+TWRP_INCLUDE_LOGCAT := true
+TARGET_USES_LOGD := true
 
 # Workaround for error copying vendor files to recovery ramdisk
 TARGET_COPY_OUT_VENDOR := system/vendor

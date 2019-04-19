@@ -113,6 +113,9 @@ TW_RECOVERY_ADDITIONAL_RELINK_FILES := ${OUT}/system/lib64/android.hardware.boot
 # MTP will not work until we update it to support ffs
 #TW_EXCLUDE_MTP := true
 
+# Enable twrp to be installed from .img file
+TW_INCLUDE_REPACKTOOLS := true
+
 # Debug flags
 TWRP_INCLUDE_LOGCAT := true
 TARGET_USES_LOGD := true

@@ -49,7 +49,7 @@ extern "C" {
 #include "../recovery/gpt-utils/gpt-utils.h"
 
 #define BOOTDEV_DIR "/dev/block/bootdevice/by-name"
-#define BOOT_IMG_PTN_NAME "boot"
+#define BOOT_IMG_PTN_NAME "boot_"
 #define LUN_NAME_END_LOC 14
 #define BOOT_SLOT_PROP "ro.boot.slot_suffix"
 
@@ -266,6 +266,8 @@ unsigned get_number_slots(struct boot_control_module *module)
 	while ((de = readdir(dir_bootdev))) {
 		if (de->d_name[0] == '.')
 			continue;
+		static_assert(AB_SLOT_A_SUFFIX[0] == '_', "Breaking change to slot A suffix");
+		static_assert(AB_SLOT_B_SUFFIX[0] == '_', "Breaking change to slot B suffix");
 		if (!strncmp(de->d_name, BOOT_IMG_PTN_NAME,
 					strlen(BOOT_IMG_PTN_NAME)))
 			slot_count++;
@@ -385,7 +387,8 @@ static int boot_ctl_set_active_slot_for_partitions(vector<string> part_list,
 		unsigned slot)
 {
 	char buf[PATH_MAX] = {0};
-	struct gpt_disk *disk = NULL;
+	struct gpt_disk *diskA = NULL;
+	struct gpt_disk *diskB = NULL;
 	char slotA[MAX_GPT_NAME_SIZE + 1] = {0};
 	char slotB[MAX_GPT_NAME_SIZE + 1] = {0};
 	char active_guid[TYPE_GUID_SIZE + 1] = {0};
@@ -423,24 +426,28 @@ static int boot_ctl_set_active_slot_for_partitions(vector<string> part_list,
 		if (stat(buf, &st))
 			continue;
 		memset(slotA, 0, sizeof(slotA));
-		memset(slotB, 0, sizeof(slotA));
+		memset(slotB, 0, sizeof(slotB));
 		snprintf(slotA, sizeof(slotA) - 1, "%s%s", prefix.c_str(),
 				AB_SLOT_A_SUFFIX);
 		snprintf(slotB, sizeof(slotB) - 1,"%s%s", prefix.c_str(),
 				AB_SLOT_B_SUFFIX);
-		//Get the disk containing the partitions that were passed in.
-		//All partitions passed in must lie on the same disk.
-		if (!disk) {
-			disk = boot_ctl_get_disk_info(slotA);
-			if (!disk)
+		//Get the disks containing the partitions that were passed in.
+		if (!diskA) {
+			diskA = boot_ctl_get_disk_info(slotA);
+			if (!diskA)
+				goto error;
+		}
+		if (!diskB) {
+			diskB = boot_ctl_get_disk_info(slotB);
+			if (!diskB)
 				goto error;
 		}
 		//Get partition entry for slot A & B from the primary
 		//and backup tables.
-		pentryA = gpt_disk_get_pentry(disk, slotA, PRIMARY_GPT);
-		pentryA_bak = gpt_disk_get_pentry(disk, slotA, SECONDARY_GPT);
-		pentryB = gpt_disk_get_pentry(disk, slotB, PRIMARY_GPT);
-		pentryB_bak = gpt_disk_get_pentry(disk, slotB, SECONDARY_GPT);
+		pentryA = gpt_disk_get_pentry(diskA, slotA, PRIMARY_GPT);
+		pentryA_bak = gpt_disk_get_pentry(diskA, slotA, SECONDARY_GPT);
+		pentryB = gpt_disk_get_pentry(diskB, slotB, PRIMARY_GPT);
+		pentryB_bak = gpt_disk_get_pentry(diskB, slotB, SECONDARY_GPT);
 		if ( !pentryA || !pentryA_bak || !pentryB || !pentryB_bak) {
 			//None of these should be NULL since we have already
 			//checked for A & B versions earlier.
@@ -492,8 +499,16 @@ static int boot_ctl_set_active_slot_for_partitions(vector<string> part_list,
 			ALOGE("%s: Unknown slot suffix!", __func__);
 			goto error;
 		}
-		if (disk) {
-			if (gpt_disk_update_crc(disk) != 0) {
+
+		if (diskA) {
+			if (gpt_disk_update_crc(diskA) != 0) {
+				ALOGE("%s: Failed to update gpt_disk crc",
+						__func__);
+				goto error;
+			}
+		}
+		if (diskB) {
+			if (gpt_disk_update_crc(diskB) != 0) {
 				ALOGE("%s: Failed to update gpt_disk crc",
 						__func__);
 				goto error;
@@ -501,18 +516,27 @@ static int boot_ctl_set_active_slot_for_partitions(vector<string> part_list,
 		}
 	}
 	//write updated content to disk
-	if (disk) {
-		if (gpt_disk_commit(disk)) {
+	if (diskA) {
+		if (gpt_disk_commit(diskA)) {
 			ALOGE("Failed to commit disk entry");
 			goto error;
 		}
-		gpt_disk_free(disk);
+		gpt_disk_free(diskA);
+	}
+	if (diskB) {
+		if (gpt_disk_commit(diskB)) {
+			ALOGE("Failed to commit disk entry");
+			goto error;
+		}
+		gpt_disk_free(diskB);
 	}
 	return 0;
 
 error:
-	if (disk)
-		gpt_disk_free(disk);
+	if (diskA)
+		gpt_disk_free(diskA);
+	if (diskB)
+		gpt_disk_free(diskB);
 	return -1;
 }
 
@@ -539,9 +563,10 @@ int set_active_boot_slot(struct boot_control_module *module, unsigned slot)
 		//XBL is handled differrently for ufs devices so ignore it
 		if (is_ufs && !strncmp(ptn_list[i], PTN_XBL, strlen(PTN_XBL)))
 				continue;
-		//The partition list will be the list of _a partitions
+		//The partition list will be the list of partitions
+		//corresponding to the slot being set active
 		string cur_ptn = ptn_list[i];
-		cur_ptn.append(AB_SLOT_A_SUFFIX);
+		cur_ptn.append(slot_suffix_arr[slot]);
 		ptn_vec.push_back(cur_ptn);
 
 	}
@@ -560,7 +585,10 @@ int set_active_boot_slot(struct boot_control_module *module, unsigned slot)
 	for (map_iter = ptn_map.begin(); map_iter != ptn_map.end(); map_iter++){
 		if (map_iter->second.size() < 1)
 			continue;
-		boot_ctl_set_active_slot_for_partitions(map_iter->second, slot);
+		if (boot_ctl_set_active_slot_for_partitions(map_iter->second, slot)) {
+			ALOGE("%s: Failed to set active slot for partitions ", __func__);;
+			goto error;
+		}
 	}
 	if (is_ufs) {
 		if (!strncmp(slot_suffix_arr[slot], AB_SLOT_A_SUFFIX,

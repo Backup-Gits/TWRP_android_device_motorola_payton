@@ -106,13 +106,15 @@ TW_DEFAULT_BRIGHTNESS := 80
 TW_SCREEN_BLANK_ON_BOOT := true
 TW_EXCLUDE_DEFAULT_USB_INIT := true
 TW_EXTRA_LANGUAGES := true
-TARGET_RECOVERY_DEVICE_MODULES += android.hardware.boot@1.0
+TARGET_RECOVERY_DEVICE_MODULES += android.hardware.boot@1.0 bootctrl.sdm660 libgptutils.so
+TW_RECOVERY_ADDITIONAL_RELINK_FILES += ${OUT_DIR}/target/product/payton/vendor/lib64/hw/bootctrl.sdm660.so
+TW_RECOVERY_ADDITIONAL_RELINK_FILES += ${OUT_DIR}/target/product/payton/vendor/lib64/libgptutils.so
 TW_USE_TOOLBOX := true
 
 # Debug flags
-#TWRP_INCLUDE_LOGCAT := true
-#TARGET_USES_LOGD := true
+TWRP_INCLUDE_LOGCAT := true
+TARGET_USES_LOGD := true
 
 # Workaround for error copying vendor files to recovery ramdisk
-TARGET_COPY_OUT_VENDOR := system/vendor
+TARGET_COPY_OUT_VENDOR := vendor
 TW_INCLUDE_REPACKTOOLS := true

@@ -95,6 +95,13 @@ service time_daemon /sbin/time_daemon
     disabled
     seclabel u:r:recovery:s0
 
+service load_bootctrl /sbin/load_bootctrl.sh
+    oneshot
+    disabled
+    user root
+    group root
+    seclabel u:r:recovery:s0
+
 # This helps fix ld.config.txt errors from the linker on Android 8.1+
 service ldconfigtxt /sbin/touch /sbin/ld.config.txt
     oneshot
@@ -123,6 +130,7 @@ on property:crypto.ready=1
     start sbinqseecomd
     start servicemanager
     restart time_daemon
+    start load_bootctrl
 
 on property:crypto.ready=0
     stop sbinqseecomd

@@ -3,7 +3,7 @@
 # specify MF_CHECK, and must come before any filesystems that do specify MF_CHECK
 
 # mount point    fstype     device                 device2                        flags
-/boot            emmc       /dev/block/bootdevice/by-name/boot                    flags=slotselect
+/boot            emmc      /dev/block/bootdevice/by-name/boot                     flags=slotselect
 /data            ext4      /dev/block/bootdevice/by-name/userdata                 flags=encryptable=ice
 /misc            emmc      /dev/block/bootdevice/by-name/misc
 /system          ext4      /dev/block/bootdevice/by-name/system                   flags=slotselect

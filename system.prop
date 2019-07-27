@@ -1,3 +1,6 @@
 ro.display.series=Moto X4
 ro.product.board=sdm660
 ro.board.platform=sdm660
+ro.build.version.release=9
+ro.build.version.security_patch=2099-12-31
+vendor.gatekeeper.disable_spu=true

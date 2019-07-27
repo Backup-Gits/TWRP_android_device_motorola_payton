@@ -93,9 +93,10 @@ TARGET_NO_KERNEL := false
 #BOARD_BUILD_SYSTEM_ROOT_IMAGE := true
 AB_OTA_UPDATER := true
 
-# Crypto
+# Encryption
+PLATFORM_SECURITY_PATCH := 2099-12-31
 TW_INCLUDE_CRYPTO := true
-TW_INCLUDE_FBE := true
+TW_INCLUDE_CRYPTO_FBE := true
 
 # TWRP
 TW_THEME := portrait_hdpi

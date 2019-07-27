@@ -35,3 +35,7 @@ PRODUCT_NAME := omni_payton
 PRODUCT_BRAND := motorola
 PRODUCT_MODEL := Moto X4
 PRODUCT_MANUFACTURER := Motorola
+
+# HACK: Set vendor patch level
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.vendor.build.security_patch=2099-12-31

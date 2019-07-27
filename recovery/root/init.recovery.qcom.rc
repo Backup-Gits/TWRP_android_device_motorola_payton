@@ -89,6 +89,12 @@ service keymaster-3-0 /sbin/android.hardware.keymaster@3.0-service
     disabled
     seclabel u:r:recovery:s0
 
+service logd /sbin/logd
+    user root
+    group root
+    disabled
+    seclabel u:r:recovery:s0
+
 service time_daemon /sbin/time_daemon
     user root
     group root
@@ -116,6 +122,7 @@ on boot
     write /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor interactive
 
 on init
+    start logd
     setprop ro.hardware.keystore sdm660
     setprop ro.hardware.gatekeeper sdm660
     setprop ro.hardware.bootctrl sdm660

@@ -14,6 +14,16 @@ you need to import this commit in the build path
 ```sh
 https://gerrit.omnirom.org/#/c/android_build/+/33182/
 ```
+### Security Patch
+Modify the buildinfo.sh in build/tools
+```sh
+echo "ro.build.version.release=$PLATFORM_VERSION" 
+echo "ro.build.version.security_patch=$PLATFORM_SECURITY_PATCH"
+-->
+echo "ro.build.version.release_orig=$PLATFORM_VERSION"
+echo "ro.build.version.security_patch_orig=$PLATFORM_SECURITY_PATCH"
+```
+
 ### How to compile
 
 ```sh
